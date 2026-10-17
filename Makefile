@@ -1,7 +1,10 @@
 ADDON := FroschglibberRepair
 VERSION := $(shell sed -n 's/^.. Version: *//p' $(ADDON).toc)
+# Build timestamp so every produced zip has a unique name (CurseForge requires it).
+STAMP := $(shell date +%Y-%m-%d_%H%M%S)
 DIST := dist
 FILES := $(ADDON).toc $(ADDON).lua frog.tga
+ZIPNAME := $(ADDON)-$(VERSION)-$(STAMP).zip
 LUA ?= lua
 LUAC ?= luac
 
@@ -20,9 +23,9 @@ changelog:
 zip:
 	@mkdir -p $(DIST)/$(ADDON)
 	@cp $(FILES) $(DIST)/$(ADDON)/
-	@cd $(DIST) && zip -r $(ADDON)-$(VERSION).zip $(ADDON)
+	@cd $(DIST) && zip -r $(ZIPNAME) $(ADDON)
 	@rm -rf $(DIST)/$(ADDON)
-	@echo "Created $(DIST)/$(ADDON)-$(VERSION).zip"
+	@echo "Created $(DIST)/$(ZIPNAME)"
 	@echo "--- Changelog for $(VERSION) (paste into the CurseForge upload form) ---"
 	@$(MAKE) --no-print-directory changelog
 

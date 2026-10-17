@@ -71,11 +71,12 @@ against a stub of the WoW API. It needs a Lua interpreter (e.g. `brew install lu
 
 ```text
 make test          # syntax check + behaviour tests
-make zip           # build dist/FroschglibberRepair-<version>.zip
+make zip           # build dist/FroschglibberRepair-<version>-<timestamp>.zip
 ```
 
 Pushing to `main` runs these steps in GitHub Actions and uploads the built zip
-as a build artifact (see `.github/workflows/ci.yml`).
+as a build artifact (see `.github/workflows/ci.yml`). The zip name includes the
+build date and time so every file uploaded to CurseForge has a unique name.
 
 ## Notes
 
