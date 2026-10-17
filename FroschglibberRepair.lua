@@ -137,10 +137,35 @@ local function UpdateWarning()
 end
 
 local function RepairAtMerchant()
-    if FroschglibberRepairDB.autoRepair and CanMerchantRepair() then
-        local useGuildBank = FroschglibberRepairDB.repairSource == "guild" and IsInGuild()
-        RepairAllItems(useGuildBank)
+    if not (FroschglibberRepairDB.autoRepair and CanMerchantRepair()) then
+        return
     end
+
+    local cost, canRepair = GetRepairAllCost()
+    if not canRepair or cost <= 0 then
+        -- Nothing to repair.
+        return
+    end
+
+    local useGuildBank = (FroschglibberRepairDB.repairSource == "guild"
+        and IsInGuild()
+        and CanGuildBankRepair()
+        and GetGuildBankMoney() >= cost) and true or false
+
+    if not useGuildBank and GetMoney() < cost then
+        -- Not enough personal money; the default Blizzard error will show.
+        return
+    end
+
+    -- Falls back to personal funds when the guild bank cannot be used
+    -- (no guild, no permission, or not enough money in the guild bank).
+    RepairAllItems(useGuildBank)
+
+    local costText = GetCoinTextureString and GetCoinTextureString(cost)
+        or (cost .. " Gold")
+    local sourceText = useGuildBank and " (aus der Gildenbank)" or ""
+    print("|cff70d070Froschglibber hat deine Ausrüstung für "
+        .. costText .. " repariert." .. sourceText .. "|r")
 end
 
 local function SellGrayItems()
@@ -148,17 +173,34 @@ local function SellGrayItems()
         return
     end
 
+    local totalEarned = 0
+    local soldCount = 0
+
     for bag = BACKPACK_CONTAINER, NUM_BAG_SLOTS do
         local slots = C_Container.GetContainerNumSlots(bag)
         for slot = 1, slots do
             local item = C_Container.GetContainerItemInfo(bag, slot)
-            if item and item.hyperlink then
-                local _, _, quality = C_Item.GetItemInfo(item.hyperlink)
-                if quality == Enum.ItemQuality.Poor then
-                    C_Container.UseContainerItem(bag, slot)
+            -- quality comes straight from the container, sellPrice still
+            -- needs GetItemInfo (nil before the item data is cached).
+            if item and item.hyperlink
+                and item.quality == Enum.ItemQuality.Poor then
+                local _, _, _, _, _, _, _, _, _, _, sellPrice =
+                    C_Item.GetItemInfo(item.hyperlink)
+                C_Container.UseContainerItem(bag, slot)
+                soldCount = soldCount + 1
+                if not item.hasNoValue then
+                    totalEarned = totalEarned
+                        + (sellPrice or 0) * (item.stackCount or 1)
                 end
             end
         end
+    end
+
+    if soldCount > 0 then
+        local earnedText = GetCoinTextureString and GetCoinTextureString(totalEarned)
+            or (totalEarned .. " Gold")
+        print("|cff70d070Froschglibber hat deinen Schrott für "
+            .. earnedText .. " abgekauft.|r")
     end
 end
 
@@ -196,19 +238,20 @@ local function CreateSettings()
     Settings.CreateCheckbox(category, autoSellSetting,
         "Verkauft beim Öffnen eines Händlers automatisch graue Gegenstände aus deinen Taschen.")
 
+    -- Without a guild the guild option is unavailable, so reset to personal
+    -- before the setting is registered (otherwise the saved value would point
+    -- to an option that no longer exists).
+    if not IsInGuild() and FroschglibberRepairDB.repairSource == "guild" then
+        FroschglibberRepairDB.repairSource = "personal"
+    end
+
     local repairSourceSetting = Settings.RegisterAddOnSetting(
         category, ADDON_NAME .. "_RepairSource", "repairSource",
         FroschglibberRepairDB, Settings.VarType.String,
-        "Reparaturkosten bezahlen mit", "guild"
+        "Reparaturkosten bezahlen mit", FroschglibberRepairDB.repairSource
     )
     local function repairSourceOptions()
-        return {
-            {
-                controlType = Settings.ControlType.Radio,
-                label = "Gildenbank bevorzugen",
-                text = "Gildenbank bevorzugen",
-                value = "guild",
-            },
+        local options = {
             {
                 controlType = Settings.ControlType.Radio,
                 label = "Eigene Tasche",
@@ -216,6 +259,15 @@ local function CreateSettings()
                 value = "personal",
             },
         }
+        if IsInGuild() then
+            table.insert(options, 1, {
+                controlType = Settings.ControlType.Radio,
+                label = "Gildenbank bevorzugen",
+                text = "Gildenbank bevorzugen",
+                value = "guild",
+            })
+        end
+        return options
     end
     Settings.CreateDropdown(
         category,
@@ -223,6 +275,9 @@ local function CreateSettings()
         repairSourceOptions,
         "Wählt die bevorzugte Quelle für automatische Reparaturkosten."
     )
+    if not IsInGuild() and FroschglibberRepairDB.repairSource == "guild" then
+        FroschglibberRepairDB.repairSource = "personal"
+    end
 
     Settings.RegisterAddOnCategory(category)
 end

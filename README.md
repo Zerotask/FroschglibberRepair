@@ -20,10 +20,12 @@ The frog can be moved, minimized, and hidden whenever you want.
 - Position and display state are saved automatically
 - Automatic equipment repair at merchants
 - Automatic repair enabled by default
+- Green chat message telling you how much the repair cost
 - Choose the preferred repair payment source:
   - Prefer Guild Bank funds
   - Use personal funds
 - Optional automatic selling of poor-quality (gray) items at merchants
+- Green chat message after auto-selling: "Froschglibber hat deinen Schrott für X Gold abgekauft."
 - Manual test mode
 - Slash command support
 - Lightweight and easy to configure
