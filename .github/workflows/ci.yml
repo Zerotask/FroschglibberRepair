@@ -19,7 +19,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Lua and zip
         run: |
@@ -33,7 +33,7 @@ jobs:
         run: make zip
 
       - name: Upload addon zip
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: FroschglibberRepair
           path: dist/*.zip
