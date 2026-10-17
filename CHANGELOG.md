@@ -2,6 +2,21 @@
 
 All notable changes to FroschglibberRepair will be documented in this file.
 
+## [1.1.0] - 2026-10-18
+
+### Added
+
+- Small frog popup on ready checks (`/rc`) that shows the durability of your
+  most worn equipped item for 10 seconds, so you can repair before a dungeon
+- Small frog popup that taunts "Haha du Noob" for 3 seconds whenever you die
+- Both small frog popups are placed automatically so they never cover the big
+  repair frog
+- New option "Haltbarkeit beim Ready Check zeigen" (enabled by default)
+- New option "Frosch bei Tod zeigen" (enabled by default)
+- Slash commands `/frosch rc` and `/frosch tod` to preview the small frog popups
+- Fixed the ready-check durability color code (it emitted too many hex digits
+  and would have shown stray numbers next to the value)
+
 ## [1.0.0] - 2026-10-18
 
 ### Added

@@ -13,6 +13,9 @@ The frog can be moved, minimized, and hidden whenever you want.
 ## Features
 
 - Large frog warning when equipped gear reaches low durability
+- Small frog popup on ready checks showing the durability of your most worn item for 10 seconds
+- Small frog popup taunting "Haha du Noob" for 3 seconds whenever you die
+- Small frog popups are positioned automatically so they never cover the big repair frog
 - Configurable durability threshold from 0% to 80%
 - 50% durability threshold by default
 - Movable warning window
@@ -35,6 +38,8 @@ The frog can be moved, minimized, and hidden whenever you want.
 ```text
 /frosch test   Show the frog warning
 /frosch hide   Hide the frog warning
+/frosch rc     Preview the ready-check durability popup
+/frosch tod    Preview the death popup ("Haha du Noob")
 /frosch reset  Reset the frog position and display state
 /fgr           Short command alias
 ```
@@ -43,7 +48,7 @@ The frog can be moved, minimized, and hidden whenever you want.
 
 Open the World of Warcraft **Settings** menu and select **AddOns** > **Froschglibber Repair**.
 
-There you can configure the durability threshold, automatic repair, the preferred repair payment source, and automatic selling of gray items.
+There you can configure the durability threshold, automatic repair, the preferred repair payment source, and automatic selling of gray items. You can also toggle the ready-check durability popup and the death taunt popup there.
 
 ## Installation
 
@@ -57,6 +62,16 @@ After installing or updating the addon, restart the game or use:
 
 ```text
 /reload
+```
+
+## Development
+
+The addon's behaviour is covered by a small test suite that loads the addon
+against a stub of the WoW API. It needs a Lua interpreter (e.g. `brew install lua`):
+
+```text
+make test          # syntax check + behaviour tests
+make zip           # build dist/FroschglibberRepair-<version>.zip
 ```
 
 ## Notes

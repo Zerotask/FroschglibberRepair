@@ -16,13 +16,24 @@ end
 if FroschglibberRepairDB.repairSource == nil then
     FroschglibberRepairDB.repairSource = "guild"
 end
+if FroschglibberRepairDB.readyCheckWarning == nil then
+    FroschglibberRepairDB.readyCheckWarning = true
+end
+if FroschglibberRepairDB.deathWarning == nil then
+    FroschglibberRepairDB.deathWarning = true
+end
 
 local warningFrame
+local smallFrogFrame
+local smallFrogTimer
 local previewWarning = false
 local FULL_WIDTH = 400
 local FULL_HEIGHT = 330
 local MINIMIZED_WIDTH = 42
 local MINIMIZED_HEIGHT = 32
+local SMALL_FROG_SIZE = 110
+local READY_CHECK_DURATION = 10
+local DEATH_DURATION = 3
 
 local function SaveLayout()
     local point, _, relativePoint, x, y = warningFrame:GetPoint()
@@ -136,6 +147,137 @@ local function UpdateWarning()
     warningFrame:SetShown(previewWarning or HasItemBelowThreshold())
 end
 
+-- Returns the durability of the most worn equipped item as a whole
+-- percentage, or nil when no equipped item reports a durability.
+local function GetLowestDurabilityPercent()
+    local lowest
+    for slot = 1, 19 do
+        local current, maximum = GetInventoryItemDurability(slot)
+        if current and maximum and maximum > 0 then
+            local ratio = current / maximum
+            if lowest == nil or ratio < lowest then
+                lowest = ratio
+            end
+        end
+    end
+    if lowest == nil then
+        return nil
+    end
+    return math.floor(lowest * 100 + 0.5)
+end
+
+local function CreateSmallFrogFrame()
+    local frame = CreateFrame("Frame", ADDON_NAME .. "SmallFrog", UIParent)
+    frame:SetSize(SMALL_FROG_SIZE, SMALL_FROG_SIZE)
+    frame:SetFrameStrata("HIGH")
+    frame:SetClampedToScreen(true)
+
+    local backdrop = frame:CreateTexture(nil, "BACKGROUND")
+    backdrop:SetAllPoints()
+    backdrop:SetColorTexture(0, 0, 0, 0.45)
+
+    local artwork = frame:CreateTexture(nil, "ARTWORK")
+    artwork:SetTexture("Interface\\AddOns\\FroschglibberRepair\\frog.tga")
+    artwork:SetAllPoints()
+    frame.artwork = artwork
+
+    local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    label:SetPoint("TOP", frame, "TOP", 0, -2)
+    label:SetShadowOffset(1, -1)
+    frame.label = label
+
+    local value = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
+    value:SetPoint("CENTER", frame, "CENTER", 0, -6)
+    value:SetJustifyH("CENTER")
+    value:SetWidth(SMALL_FROG_SIZE + 40)
+    value:SetShadowOffset(2, -2)
+    frame.value = value
+
+    frame:Hide()
+    return frame
+end
+
+-- Places the small frog where it does not cover the big repair warning,
+-- falling back to the screen edges and corners when the warning overlaps.
+local function PositionSmallFrogFrame(frame)
+    local offset = 130
+    local candidates = {
+        { "TOP", "TOP", 0, -offset },
+        { "BOTTOM", "BOTTOM", 0, offset },
+        { "LEFT", "LEFT", offset, 0 },
+        { "RIGHT", "RIGHT", -offset, 0 },
+        { "TOPLEFT", "TOPLEFT", 12, -12 },
+        { "TOPRIGHT", "TOPRIGHT", -12, -12 },
+        { "BOTTOMLEFT", "BOTTOMLEFT", 12, 12 },
+        { "BOTTOMRIGHT", "BOTTOMRIGHT", -12, 12 },
+    }
+
+    local wLeft, wBottom, wRight, wTop
+    if warningFrame and warningFrame:IsShown() then
+        wLeft, wBottom = warningFrame:GetLeft(), warningFrame:GetBottom()
+        wRight, wTop = warningFrame:GetRight(), warningFrame:GetTop()
+    end
+
+    for _, anchor in ipairs(candidates) do
+        frame:ClearAllPoints()
+        frame:SetPoint(anchor[1], UIParent, anchor[2], anchor[3], anchor[4])
+        if not wLeft then
+            return
+        end
+        local left, bottom = frame:GetLeft(), frame:GetBottom()
+        local right, top = frame:GetRight(), frame:GetTop()
+        if left and not (left < wRight and right > wLeft
+            and bottom < wTop and top > wBottom) then
+            return
+        end
+    end
+end
+
+-- Shows the small frog with the given text for a limited time.
+local function ShowSmallFrog(text, duration, labelText, largeFont)
+    if not smallFrogFrame then
+        smallFrogFrame = CreateSmallFrogFrame()
+    end
+
+    smallFrogFrame.label:SetShown(labelText ~= nil)
+    if labelText then
+        smallFrogFrame.label:SetText(labelText)
+    end
+    smallFrogFrame.value:SetFontObject(largeFont and GameFontNormalLarge or GameFontNormal)
+    smallFrogFrame.value:SetText(text)
+
+    PositionSmallFrogFrame(smallFrogFrame)
+    smallFrogFrame:Show()
+
+    if smallFrogTimer then
+        smallFrogTimer:Cancel()
+    end
+    smallFrogTimer = C_Timer.NewTimer(duration, function()
+        smallFrogTimer = nil
+        if smallFrogFrame then
+            smallFrogFrame:Hide()
+        end
+    end)
+end
+
+-- Shows the small frog with the current durability when a ready check starts.
+local function ShowReadyCheckWarning()
+    local percent = GetLowestDurabilityPercent()
+    local color = "70d070"
+    if percent == nil then
+        percent = 100
+    elseif percent < FroschglibberRepairDB.threshold then
+        color = "ff4040"
+    end
+    ShowSmallFrog(("|cff%s%d%%|r"):format(color, percent),
+        READY_CHECK_DURATION, "Haltbarkeit", true)
+end
+
+-- Shows the small frog laughing at the player after they died.
+local function ShowDeathWarning()
+    ShowSmallFrog("|cffffd100Haha du Noob|r", DEATH_DURATION, nil, false)
+end
+
 local function RepairAtMerchant()
     if not (FroschglibberRepairDB.autoRepair and CanMerchantRepair()) then
         return
@@ -222,6 +364,22 @@ local function CreateSettings()
     Settings.CreateSlider(category, setting, options,
         "Bei welchem Haltbarkeitswert der Reparaturhinweis angezeigt wird.")
 
+    local readyCheckSetting = Settings.RegisterAddOnSetting(
+        category, ADDON_NAME .. "_ReadyCheckWarning", "readyCheckWarning",
+        FroschglibberRepairDB, Settings.VarType.Boolean,
+        "Haltbarkeit beim Ready Check zeigen", true
+    )
+    Settings.CreateCheckbox(category, readyCheckSetting,
+        "Zeigt 10 Sekunden lang einen kleinen Frosch mit deiner aktuellen Haltbarkeit, wenn ein Ready Check gestartet wird.")
+
+    local deathSetting = Settings.RegisterAddOnSetting(
+        category, ADDON_NAME .. "_DeathWarning", "deathWarning",
+        FroschglibberRepairDB, Settings.VarType.Boolean,
+        "Frosch bei Tod zeigen", true
+    )
+    Settings.CreateCheckbox(category, deathSetting,
+        "Zeigt 3 Sekunden lang einen kleinen Frosch, der dich auslacht, wenn du stirbst.")
+
     local autoRepairSetting = Settings.RegisterAddOnSetting(
         category, ADDON_NAME .. "_AutoRepair", "autoRepair",
         FroschglibberRepairDB, Settings.VarType.Boolean,
@@ -294,6 +452,12 @@ SlashCmdList.FROSCHGLIBBERREPAIR = function(message)
         previewWarning = false
         UpdateWarning()
         print("|cff70d070FroschglibberRepair: Vorschau ausgeblendet.|r")
+    elseif command == "rc" or command == "readycheck" then
+        ShowReadyCheckWarning()
+        print("|cff70d070FroschglibberRepair: Ready-Check-Haltbarkeit eingeblendet.|r")
+    elseif command == "death" or command == "tod" then
+        ShowDeathWarning()
+        print("|cff70d070FroschglibberRepair: Todes-Frosch eingeblendet.|r")
     elseif command == "reset" then
         FroschglibberRepairDB.threshold = DEFAULT_THRESHOLD
         FroschglibberRepairDB.minimized = false
@@ -303,7 +467,7 @@ SlashCmdList.FROSCHGLIBBERREPAIR = function(message)
         UpdateWarning()
         print("|cff70d070FroschglibberRepair: Schwelle auf 50% gesetzt und Frosch eingeblendet.|r")
     else
-        print("|cff70d070FroschglibberRepair Befehle:|r /frosch test, /frosch hide, /frosch reset")
+        print("|cff70d070FroschglibberRepair Befehle:|r /frosch test, /frosch hide, /frosch rc, /frosch tod, /frosch reset")
     end
 end
 
@@ -311,11 +475,14 @@ local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("PLAYER_ENTERING_WORLD")
 events:RegisterEvent("MERCHANT_SHOW")
+events:RegisterEvent("READY_CHECK")
+events:RegisterEvent("PLAYER_DEAD")
 events:RegisterEvent("UPDATE_INVENTORY_DURABILITY")
 events:RegisterEvent("UNIT_INVENTORY_CHANGED")
 events:SetScript("OnEvent", function(_, event, unit)
     if event == "PLAYER_LOGIN" then
         warningFrame = CreateWarningFrame()
+        smallFrogFrame = CreateSmallFrogFrame()
         local settingsOK, settingsError = pcall(CreateSettings)
         if not settingsOK then
             print("|cffff4040FroschglibberRepair Einstellungen konnten nicht geladen werden:|r " .. tostring(settingsError))
@@ -324,6 +491,14 @@ events:SetScript("OnEvent", function(_, event, unit)
     elseif event == "MERCHANT_SHOW" then
         RepairAtMerchant()
         SellGrayItems()
+    elseif event == "READY_CHECK" then
+        if FroschglibberRepairDB.readyCheckWarning then
+            ShowReadyCheckWarning()
+        end
+    elseif event == "PLAYER_DEAD" then
+        if FroschglibberRepairDB.deathWarning then
+            ShowDeathWarning()
+        end
     elseif event == "UNIT_INVENTORY_CHANGED" then
         if unit == "player" then
             UpdateWarning()
