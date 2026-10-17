@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Lint, test and package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Lua and zip
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.4 zip
+
+      - name: Lint and test
+        run: make test LUA=lua5.4 LUAC=luac5.4
+
+      - name: Build addon zip
+        run: make zip
+
+      - name: Upload addon zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: FroschglibberRepair
+          path: dist/*.zip
+          if-no-files-found: error

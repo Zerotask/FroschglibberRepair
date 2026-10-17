@@ -74,6 +74,9 @@ make test          # syntax check + behaviour tests
 make zip           # build dist/FroschglibberRepair-<version>.zip
 ```
 
+Pushing to `main` runs these steps in GitHub Actions and uploads the built zip
+as a build artifact (see `.github/workflows/ci.yml`).
+
 ## Notes
 
 Automatic repair and automatic selling work when interacting with a merchant that provides the corresponding services. Repair costs follow the normal World of Warcraft merchant rules and available funds.
