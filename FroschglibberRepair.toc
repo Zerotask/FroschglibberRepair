@@ -1,0 +1,9 @@
+## Interface: 120100, 120105
+## Title: FroschglibberRepair
+## Notes: A large frog reminds you to repair low-durability equipment.
+## Author: Local
+## Version: 1.0.0
+## IconTexture: Interface\AddOns\FroschglibberRepair\frog.tga
+## SavedVariables: FroschglibberRepairDB
+
+FroschglibberRepair.lua
