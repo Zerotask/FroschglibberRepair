@@ -15,7 +15,7 @@ The frog can be moved, minimized, and hidden whenever you want.
 - Large frog warning when equipped gear reaches low durability
 - Small frog popup on ready checks showing the durability of your most worn item for 10 seconds
 - Small frog popup taunting "Haha du Noob" for 3 seconds whenever you die
-- Small frog popups are positioned automatically so they never cover the big repair frog
+- Small frog popups are shown in the middle of the screen and only move aside when the big repair frog would be covered
 - Configurable durability threshold from 0% to 80%
 - 50% durability threshold by default
 - Movable warning window
@@ -28,7 +28,7 @@ The frog can be moved, minimized, and hidden whenever you want.
   - Prefer Guild Bank funds
   - Use personal funds
 - Optional automatic selling of poor-quality (gray) items at merchants
-- Green chat message after auto-selling: "Froschglibber hat deinen Schrott für X Gold abgekauft."
+- Green chat message after auto-selling: "Froschglibber hat deinen Schrott für X abgekauft." (amount split into gold, silver and copper)
 - Manual test mode
 - Slash command support
 - Lightweight and easy to configure

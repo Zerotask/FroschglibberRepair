@@ -2,6 +2,17 @@
 
 All notable changes to FroschglibberRepair will be documented in this file.
 
+## [1.1.1] - 2026-10-18
+
+### Fixed
+
+- Repair and sale chat messages now show the correct amount of money: repair
+  costs and sell prices are returned in copper, but were printed as if they
+  were gold (a 212 Gold 45 Silber 34 Kupfer repair showed up as
+  "2124534 Gold"). The amount is now split into gold, silver and copper.
+- The death frog ("Haha du Noob") no longer hides behind the Blizzard
+  "Freilassen" (release spirit) dialog and is shown in the middle of the screen.
+
 ## [1.1.0] - 2026-10-18
 
 ### Added

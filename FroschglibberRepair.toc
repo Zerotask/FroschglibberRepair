@@ -2,7 +2,7 @@
 ## Title: FroschglibberRepair
 ## Notes: A large frog reminds you to repair low-durability equipment, plus small frog popups for ready checks and deaths.
 ## Author: Local
-## Version: 1.1.0
+## Version: 1.1.1
 ## IconTexture: Interface\AddOns\FroschglibberRepair\frog.tga
 ## SavedVariables: FroschglibberRepairDB
 

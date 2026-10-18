@@ -169,7 +169,9 @@ end
 local function CreateSmallFrogFrame()
     local frame = CreateFrame("Frame", ADDON_NAME .. "SmallFrog", UIParent)
     frame:SetSize(SMALL_FROG_SIZE, SMALL_FROG_SIZE)
-    frame:SetFrameStrata("HIGH")
+    -- TOOLTIP is the highest frame strata, so the popup stays above the
+    -- Blizzard "Freilassen" (release spirit) dialog that shows up on death.
+    frame:SetFrameStrata("TOOLTIP")
     frame:SetClampedToScreen(true)
 
     local backdrop = frame:CreateTexture(nil, "BACKGROUND")
@@ -197,11 +199,12 @@ local function CreateSmallFrogFrame()
     return frame
 end
 
--- Places the small frog where it does not cover the big repair warning,
--- falling back to the screen edges and corners when the warning overlaps.
+-- Places the small frog in the middle of the screen, moving it out of the way
+-- only when the big repair warning is shown and would otherwise be covered.
 local function PositionSmallFrogFrame(frame)
     local offset = 130
     local candidates = {
+        { "CENTER", "CENTER", 0, 0 },
         { "TOP", "TOP", 0, -offset },
         { "BOTTOM", "BOTTOM", 0, offset },
         { "LEFT", "LEFT", offset, 0 },
@@ -278,6 +281,34 @@ local function ShowDeathWarning()
     ShowSmallFrog("|cffffd100Haha du Noob|r", DEATH_DURATION, nil, false)
 end
 
+-- Formats an amount of copper as a readable coin string ("2 Gold 45 Silber 34
+-- Kupfer"). GetRepairAllCost() and item sell prices are in copper, so they must
+-- not be printed with a fixed "Gold" suffix.
+local function FormatMoney(copper)
+    copper = math.max(0, math.floor(copper or 0))
+    if GetCoinTextureString then
+        local ok, text = pcall(GetCoinTextureString, copper)
+        if ok and type(text) == "string" and text ~= "" then
+            return text
+        end
+    end
+
+    local gold = math.floor(copper / 10000)
+    local silver = math.floor(copper % 10000 / 100)
+    local remainder = copper % 100
+    local parts = {}
+    if gold > 0 then
+        parts[#parts + 1] = gold .. " Gold"
+    end
+    if silver > 0 then
+        parts[#parts + 1] = silver .. " Silber"
+    end
+    if remainder > 0 or #parts == 0 then
+        parts[#parts + 1] = remainder .. " Kupfer"
+    end
+    return table.concat(parts, " ")
+end
+
 local function RepairAtMerchant()
     if not (FroschglibberRepairDB.autoRepair and CanMerchantRepair()) then
         return
@@ -303,8 +334,7 @@ local function RepairAtMerchant()
     -- (no guild, no permission, or not enough money in the guild bank).
     RepairAllItems(useGuildBank)
 
-    local costText = GetCoinTextureString and GetCoinTextureString(cost)
-        or (cost .. " Gold")
+    local costText = FormatMoney(cost)
     local sourceText = useGuildBank and " (aus der Gildenbank)" or ""
     print("|cff70d070Froschglibber hat deine Ausrüstung für "
         .. costText .. " repariert." .. sourceText .. "|r")
@@ -339,8 +369,7 @@ local function SellGrayItems()
     end
 
     if soldCount > 0 then
-        local earnedText = GetCoinTextureString and GetCoinTextureString(totalEarned)
-            or (totalEarned .. " Gold")
+        local earnedText = FormatMoney(totalEarned)
         print("|cff70d070Froschglibber hat deinen Schrott für "
             .. earnedText .. " abgekauft.|r")
     end

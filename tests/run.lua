@@ -204,7 +204,9 @@ function CanMerchantRepair() return true end
 function GetRepairAllCost() return 1234, true end
 function GetMoney() return 999999 end
 function RepairAllItems(useGuild) _G.lastRepairGuild = useGuild end
-function GetCoinTextureString(cost) return cost .. "g" end
+-- Simulates a client where the coin-texture helper is unavailable, which is
+-- what made the old code fall back to printing raw copper with a "Gold" suffix.
+function GetCoinTextureString() return nil end
 _G.CanGuildBankRepair = function() return false end
 _G.GetGuildBankMoney = function() return 0 end
 _G.Enum = { ItemQuality = { Poor = 0 } }
@@ -264,6 +266,8 @@ local wf = _G[ADDON_NAME .. "Warning"]
 local sf = _G[ADDON_NAME .. "SmallFrog"]
 check(wf ~= nil, "big repair warning frame created on login")
 check(sf ~= nil, "small frog frame created on login")
+check(sf.strata == "TOOLTIP",
+  "small frog uses TOOLTIP strata so it shows above the release-spirit dialog (got: " .. tostring(sf.strata) .. ")")
 check(_G.registeredCategory ~= nil, "settings category registered")
 
 for i = 1, 19 do _G.DURABILITY[i] = { 60, 100 } end
@@ -333,6 +337,31 @@ FireEvents("READY_CHECK")
 check(noOverlap(sf, wf),
   "small frog avoids the big frog moved to a corner (" .. rectText(wf) .. " vs " .. rectText(sf) .. ")")
 RunPendingTimers()
+
+-------------------------------------------------- centered popup
+for i = 1, 19 do _G.DURABILITY[i] = { 100, 100 } end
+FireEvents("UPDATE_INVENTORY_DURABILITY")
+RunPendingTimers()
+check(not wf:IsShown(), "big frog hidden when durability is full")
+FireEvents("PLAYER_DEAD")
+local uL, uB, uR, uT = _G.UIParent:GetLeft(), _G.UIParent:GetBottom(), _G.UIParent:GetRight(), _G.UIParent:GetTop()
+local sfx, sfy = (sf:GetLeft() + sf:GetRight()) / 2, (sf:GetBottom() + sf:GetTop()) / 2
+check(math.abs(sfx - (uL + uR) / 2) < 1 and math.abs(sfy - (uB + uT) / 2) < 1,
+  "death frog is centered on screen when the big frog is hidden (" .. rectText(sf) .. ")")
+RunPendingTimers()
+
+-------------------------------------------------- money formatting
+-- GetRepairAllCost() returns 1234 copper == 12 Silber 34 Kupfer.
+FireEvents("MERCHANT_SHOW")
+local repairLine
+for _, line in ipairs(printed) do
+  if line:find("repariert", 1, true) then repairLine = line end
+end
+check(repairLine ~= nil, "repair message printed on MERCHANT_SHOW")
+check(repairLine ~= nil and repairLine:find("12 Silber 34 Kupfer", 1, true) ~= nil,
+  "repair cost (1234 copper) is shown as 12 Silber 34 Kupfer (got: " .. tostring(repairLine) .. ")")
+check(repairLine ~= nil and repairLine:find("Gold", 1, true) == nil,
+  "repair cost is not printed as raw copper with a Gold suffix")
 
 ---------------------------------------------------------------- addon chat output
 say("")
