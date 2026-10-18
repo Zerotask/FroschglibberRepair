@@ -13,9 +13,9 @@ The frog can be moved, minimized, and hidden whenever you want.
 ## Features
 
 - Large frog warning when equipped gear reaches low durability
-- Small frog popup on ready checks showing the durability of your most worn item for 10 seconds
+- Small frog popup on ready checks showing the durability of your most worn item for 10 seconds (red below the threshold, green otherwise)
 - Small frog popup taunting "Haha du Noob" for 3 seconds whenever you die
-- Small frog popups are shown in the middle of the screen and only move aside when the big repair frog would be covered
+- Small frog popups are shown in the middle of the screen with their text above the frog image, and only move aside when the big repair frog would be covered
 - Configurable durability threshold from 0% to 80%
 - 50% durability threshold by default
 - Movable warning window

@@ -183,17 +183,19 @@ local function CreateSmallFrogFrame()
     artwork:SetAllPoints()
     frame.artwork = artwork
 
-    local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    label:SetPoint("TOP", frame, "TOP", 0, -2)
-    label:SetShadowOffset(1, -1)
-    frame.label = label
-
+    -- The text is drawn above the frog image instead of on top of it, so the
+    -- frog stays visible and neither popup covers its face.
     local value = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-    value:SetPoint("CENTER", frame, "CENTER", 0, -6)
+    value:SetPoint("BOTTOM", frame, "TOP", 0, 2)
     value:SetJustifyH("CENTER")
-    value:SetWidth(SMALL_FROG_SIZE + 40)
+    value:SetWidth(SMALL_FROG_SIZE + 80)
     value:SetShadowOffset(2, -2)
     frame.value = value
+
+    local label = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    label:SetPoint("BOTTOM", value, "TOP", 0, 2)
+    label:SetShadowOffset(1, -1)
+    frame.label = label
 
     frame:Hide()
     return frame

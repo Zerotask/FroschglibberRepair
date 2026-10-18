@@ -4,6 +4,13 @@ All notable changes to FroschglibberRepair will be documented in this file.
 
 ## [1.1.1] - 2026-10-18
 
+### Changed
+
+- Small frog popups (ready check and death) now show their text above the frog
+  image instead of on top of the frog, so the frog stays visible
+- The ready-check durability is shown in red when it is below the configured
+  threshold and in green otherwise
+
 ### Fixed
 
 - Repair and sale chat messages now show the correct amount of money: repair

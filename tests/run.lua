@@ -268,6 +268,8 @@ check(wf ~= nil, "big repair warning frame created on login")
 check(sf ~= nil, "small frog frame created on login")
 check(sf.strata == "TOOLTIP",
   "small frog uses TOOLTIP strata so it shows above the release-spirit dialog (got: " .. tostring(sf.strata) .. ")")
+check(sf.value.p ~= nil and sf.value.p[1] == "BOTTOM" and sf.value.p[3] == "TOP",
+  "small frog text is anchored above the frog image instead of on it")
 check(_G.registeredCategory ~= nil, "settings category registered")
 
 for i = 1, 19 do _G.DURABILITY[i] = { 60, 100 } end
@@ -291,6 +293,21 @@ check(noOverlap(sf, wf), "ready check frog does NOT overlap the big frog (" .. r
 
 RunPendingTimers()
 check(not sf:IsShown(), "ready check frog hidden after its timer")
+
+-- The value turns green when the durability is at or above the threshold.
+for i = 1, 19 do _G.DURABILITY[i] = { 80, 100 } end
+FireEvents("UPDATE_INVENTORY_DURABILITY")
+RunPendingTimers()
+check(not wf:IsShown(), "big frog hidden when durability 80% > threshold 50%")
+FireEvents("READY_CHECK")
+check(sf.value:GetText() == "|cff70d07080%|r",
+  "ready check shows green when durability is at/above the threshold (got: " .. tostring(sf.value:GetText()) .. ")")
+RunPendingTimers()
+
+-- Restore low durability so the death popup overlap check stays meaningful.
+for i = 1, 19 do _G.DURABILITY[i] = { 30, 100 } end
+FireEvents("UPDATE_INVENTORY_DURABILITY")
+RunPendingTimers()
 
 ---------------------------------------------------------------- death popup
 FireEvents("PLAYER_DEAD")
